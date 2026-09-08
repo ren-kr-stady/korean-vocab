@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>韓国語トレーニング</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#18202a;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--good:#16834b;--bad:#d33a3a;--shadow:0 8px 28px rgba(0,0,0,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.app{max-width:720px;margin:auto;min-height:100vh;padding:18px 16px 90px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.brand{font-weight:800;font-size:21px}.streak{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+h1,h2,h3{margin:0 0 12px}.muted{color:var(--muted)}.big{font-size:36px;font-weight:800;letter-spacing:.02em}.center{text-align:center}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.primary{background:var(--accent);color:#fff;border-radius:14px;padding:14px 16px;font-weight:700;width:100%}.secondary{background:#eef0f4;color:var(--text);border-radius:12px;padding:11px 14px;font-weight:650}.danger{color:var(--bad)}
+.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;background:#fff}.field textarea{min-height:80px;resize:vertical}
+.row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.grow{flex:1}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);border-top:1px solid var(--line);padding:10px max(12px,calc((100vw - 720px)/2 + 12px));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;z-index:5}.nav button{background:transparent;color:var(--muted);padding:7px 4px;font-size:12px}.nav button.active{color:var(--text);font-weight:800}
+.stat{padding:14px;border-radius:14px;background:#f7f8fa}.stat b{display:block;font-size:22px;margin-top:3px}
+.progress{height:9px;background:#eceef2;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:var(--accent)}
+.list{display:flex;flex-direction:column}.item{padding:14px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.tag{font-size:11px;padding:4px 8px;border-radius:99px;background:#eef0f4}.on{background:#e8f7ef;color:var(--good)}.off{background:#f0f1f3;color:var(--muted)}
+.answer{font-size:26px;font-weight:800;text-align:center;margin:20px 0}.result-good{color:var(--good)}.result-bad{color:var(--bad)}
+.choice{display:flex;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:11px;margin:7px 0}.choice input{width:auto}
+.small{font-size:12px}.empty{text-align:center;padding:30px;color:var(--muted)}
+.hidden{display:none!important}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;z-index:20;font-size:13px}
+@media(min-width:650px){.app{padding-top:28px}.nav{position:static;margin:30px auto 0;max-width:720px;border:1px solid var(--line);border-radius:16px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const KEY="koreanTrainer_v1";
+const defaultData={words:[],history:[],goal:30,sound:true,slow:false,effects:false,dark:false,streak:0,lastStudyDate:null};
+let data=load(), session=null, page="home";
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(defaultData)}catch{return structuredClone(defaultData)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function today(){return new Date().toISOString().slice(0,10)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function activeWords(){return data.words.filter(w=>w.active!==false)}
+function rate(w){return w.attempts?Math.round(w.correct/w.attempts*100):0}
+function recentRate(w){let a=w.results||[];if(!a.length)return 0; a=a.slice(-10); return Math.round(a.filter(Boolean).length/a.length*100)}
+function mastered(w){return (w.results||[]).length>=10 && recentRate(w)>=90 && (w.streak||0)>=5}
+function speak(text){if(!data.sound||!("speechSynthesis" in window))return; speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text);u.lang="ko-KR";u.rate=data.slow?.75:1;speechSynthesis.speak(u)}
+function effect(ok){if(!data.effects)return; if(navigator.vibrate)navigator.vibrate(ok?30:[40,30,60])}
+function toast(t){let e=document.getElementById("toast");e.textContent=t;e.classList.remove("hidden");setTimeout(()=>e.classList.add("hidden"),1800)}
+function nav(){return `<nav class="nav">
+<button class="${page==="home"?"active":""}" onclick="go('home')">🏠<br>ホーム</button>
+<button class="${(page==="words"||page==="wordForm")?"active":""}" onclick="go('words')">📚<br>単語</button>
+<button class="${page==="history"?"active":""}" onclick="go('history')">📈<br>履歴</button>
+<button class="${page==="settings"?"active":""}" onclick="go('settings')">⚙️<br>設定</button></nav>`}
+function shell(content){
+ let backBtn=page!=="home"?`<div style="margin-bottom:12px"><button class="secondary" onclick="goBack()">← 戻る</button></div>`:"";
+ document.getElementById("app").innerHTML=`<main class="app"><div class="top"><div class="brand">🇰🇷 韓国語トレーニング</div><div class="streak">🔥 ${data.streak}日</div></div>${backBtn}${content}</main>${nav()}`
+}
+function goBack(){
+ if(page==="wordForm"){go("words");return}
+ if(page==="study"||page==="result"){if(confirm("学習を中断してホームに戻りますか？"))go("home");return}
+ go("home");
+}
+
+function go(p){page=p; if(p==="home")renderHome();if(p==="words")renderWords();if(p==="history")renderHistory();if(p==="settings")renderSettings()}
+
+function renderHome(){
+ let h=data.history.find(x=>x.date===today())||{questions:0,correct:0};
+ let pct=h.questions?Math.round(h.correct/h.questions*100):0;
+ shell(`<div class="card center"><div class="muted">今日の学習</div><div class="big">${h.questions} / ${data.goal}問</div><div class="progress"><div style="width:${Math.min(100,h.questions/data.goal*100)}%"></div></div><div class="small muted" style="margin-top:8px">今日の正解率 ${pct}%</div></div>
+ <div class="grid"><div class="stat">登録単語・フレーズ<b>${data.words.length}</b></div><div class="stat">出題ON<b>${activeWords().length}</b></div><div class="stat">習得済み<b>${data.words.filter(mastered).length}</b></div><div class="stat">連続学習<b>${data.streak}日</b></div></div>
+ <div class="card"><button class="primary" onclick="setupStudy()">▶ 学習する</button></div>
+ <div class="grid"><button class="secondary" onclick="go('words')">📚 単語一覧</button><button class="secondary" onclick="addWord()">➕ 単語を追加</button></div>`);
+}
+
+function setupStudy(){
+ page="studySetup";
+ shell(`<div class="card"><h2>📝 学習設定</h2>
+ <div class="field"><label>問題数</label><div class="grid3">${[10,20,30,50,100].map(n=>`<button class="secondary" onclick="document.getElementById('count').value=${n}">${n}</button>`).join("")}</div><input id="count" type="number" min="1" value="${data.goal}" style="margin-top:10px"></div>
+ <div class="field"><label>出題範囲</label><select id="scope" onchange="toggleCats()"><option value="all">すべて</option><option value="weak">苦手な問題</option><option value="unlearned">未学習</option><option value="todayWrong">今日間違えた問題</option><option value="todayAdded">今日追加した問題</option><option value="fav">お気に入り</option><option value="category">カテゴリ指定</option></select></div>
+ <div id="cats" class="field hidden"><label>カテゴリ</label><input id="cat" placeholder="例：動詞"></div>
+ <button class="primary" onclick="startStudy()">▶ 学習開始</button></div>`);
+}
+function toggleCats(){document.getElementById("cats").classList.toggle("hidden",document.getElementById("scope").value!=="category")}
+
+function startStudy(){
+ let count=Math.max(1,+document.getElementById("count").value||10), scope=document.getElementById("scope").value, pool=activeWords();
+ if(scope==="weak")pool=pool.filter(w=>w.attempts>0 && recentRate(w)<90);
+ if(scope==="unlearned")pool=pool.filter(w=>!w.attempts);
+ if(scope==="todayWrong"){let d=data.history.find(x=>x.date===today());pool=pool.filter(w=>d?.wrongIds?.includes(w.id))}
+ if(scope==="todayAdded")pool=pool.filter(w=>w.added===today());
+ if(scope==="fav")pool=pool.filter(w=>w.favorite);
+ if(scope==="category"){let c=(document.getElementById("cat").value||"").trim();pool=pool.filter(w=>(w.category||"")===c)}
+ if(!pool.length){toast("該当する問題がありません");return}
+ session={count,answered:0,correct:0,wrong:0,queue:[],current:null,lastWrong:null,scope,pool};
+ nextQuestion();
+}
+
+function weight(w){
+ let r=recentRate(w), base=w.attempts?Math.max(1,110-r):25;
+ if((w.streak||0)>=5)base*=.25;
+ if(mastered(w))base*=.35;
+ if(w.lastWrongAt && Date.now()-w.lastWrongAt<86400000)base*=2.5;
+ return base;
+}
+function pick(){
+ let pool=session.pool, total=pool.reduce((a,w)=>a+weight(w),0), x=Math.random()*total;
+ for(let w of pool){x-=weight(w);if(x<=0)return w}
+ return pool[pool.length-1];
+}
+function nextQuestion(){
+ if(session.answered>=session.count){finishStudy();return}
+ let w=session.queue.shift()||pick();
+ session.current=w; session.answerLocked=false;
+ page="study";
+ shell(`<div class="card center"><div class="muted">${session.answered+1} / ${session.count}</div><div class="answer">${esc(w.jp)}</div><div class="field"><input id="ans" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="韓国語で入力"></div><button class="primary" onclick="submitAnswer()">回答</button><div class="small muted" style="margin-top:12px">Enterでも回答できます</div></div>`);
+ setTimeout(()=>document.getElementById("ans")?.focus(),50);
+}
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&page==="study")submitAnswer()})
+
+function submitAnswer(){
+ if(session.answerLocked)return;session.answerLocked=true;
+ let w=session.current, input=(document.getElementById("ans").value||"").trim(), ok=input===w.ko;
+ w.attempts=(w.attempts||0)+1;w.results=w.results||[];
+ w.results.push(ok);if(w.results.length>10)w.results=w.results.slice(-10);
+ if(ok){w.correct=(w.correct||0)+1;w.streak=(w.streak||0)+1;w.lastWrongAt=null;session.correct++;effect(true)}
+ else{w.streak=0;w.lastWrongAt=Date.now();session.wrong++;session.queue.push(w);effect(false)}
+ session.answered++;save();showResult(ok,input,w);
+}
+function showResult(ok,input,w){
+ page="result";shell(`<div class="card center"><h2 class="${ok?"result-good":"result-bad"}">${ok?"⭕ 正解！":"❌ 不正解"}</h2>
+ ${!ok?`<div class="muted">あなたの回答</div><div class="answer">${esc(input||"（未入力）")}</div>`:""}
+ <div class="muted">正解</div><div class="answer">${esc(w.ko)}</div><div class="row" style="justify-content:center"><button class="secondary" onclick="speak('${esc(w.ko).replace(/'/g,"&#39;")}')">🔊 音声</button></div>
+ <div class="small muted" style="margin:15px 0">連続正解 ${w.streak||0}回　/　最近10回 ${recentRate(w)}%</div>
+ <button class="primary" onclick="nextQuestion()">次へ</button></div>`);
+ setTimeout(()=>speak(w.ko),300);
+}
+
+function finishStudy(){
+ let d=data.history.find(x=>x.date===today());if(!d){d={date:today(),questions:0,correct:0,wrongIds:[],minutes:0};data.history.unshift(d)}
+ d.questions+=session.answered;d.correct+=session.correct;
+ d.wrongIds=[...new Set([...(d.wrongIds||[]),...session.pool.filter(w=>w.lastWrongAt && Date.now()-w.lastWrongAt<60000).map(w=>w.id)])];
+ if(data.lastStudyDate!==today()){let y=new Date();y.setDate(y.getDate()-1);let ys=y.toISOString().slice(0,10);data.streak=data.lastStudyDate===ys?data.streak+1:1;data.lastStudyDate=today()}
+ save();renderResultSummary();
+}
+function renderResultSummary(){
+ page="home";shell(`<div class="card center"><h2>🎉 学習終了！</h2><div class="grid"><div class="stat">問題<b>${session.answered}</b></div><div class="stat">正解<b>${session.correct}</b></div><div class="stat">不正解<b>${session.wrong}</b></div><div class="stat">正解率<b>${Math.round(session.correct/session.answered*100)}%</b></div></div><div style="height:14px"></div><button class="primary" onclick="go('home')">ホームへ</button></div>`)}
+
+function renderWords(){
+ shell(`<div class="card"><div class="row between"><h2>📚 単語一覧</h2><button class="secondary" onclick="addWord()">＋追加</button></div><div class="field"><input id="search" placeholder="🔍 日本語・韓国語・カテゴリで検索" oninput="drawWords()"></div><div class="row wrap"><select id="sort" onchange="drawWords()" class="secondary"><option value="new">登録順</option><option value="rate">正解率が低い順</option><option value="recent">最近学習</option><option value="jp">日本語順</option></select></div></div><div id="wordList" class="card"></div>`);
+ drawWords();
+}
+function drawWords(){
+ let q=(document.getElementById("search")?.value||"").toLowerCase(), sort=document.getElementById("sort")?.value||"new";
+ let a=data.words.filter(w=>`${w.jp} ${w.ko} ${w.category}`.toLowerCase().includes(q));
+ if(sort==="rate")a.sort((x,y)=>rate(x)-rate(y));if(sort==="recent")a.sort((x,y)=>(y.lastWrongAt||0)-(x.lastWrongAt||0));if(sort==="jp")a.sort((x,y)=>x.jp.localeCompare(y.jp,"ja"));
+ document.getElementById("wordList").innerHTML=a.length?`<div class="list">${a.map(w=>`<div class="item"><div class="row between"><div class="grow" onclick="editWord('${w.id}')" style="cursor:pointer"><b>${esc(w.jp)}</b><div>${esc(w.ko)}</div><div class="small muted">${esc(w.category||"未分類")}　${w.attempts||0}回　正解率${rate(w)}%　${mastered(w)?"🎓習得":""}</div></div><div class="row"><span class="tag ${w.active===false?"off":"on"}">${w.active===false?"OFF":"ON"}</span><button class="secondary" onclick="toggleWord('${w.id}')">切替</button></div></div></div>`).join("")}</div>`:`<div class="empty">登録された単語がありません</div>`;
+}
+function toggleWord(id){let w=data.words.find(x=>x.id===id);w.active=w.active===false;save();drawWords()}
+
+function addWord(w=null){
+ page="wordForm"; shell(`<div class="card"><h2>${w?"✏️ 単語を編集":"➕ 単語を追加"}</h2>
+ <div class="field"><label>日本語</label><input id="jp" value="${esc(w?.jp||"")}"></div>
+ <div class="field"><label>韓国語（完全一致の正解）</label><input id="ko" value="${esc(w?.ko||"")}" autocapitalize="none"></div>
+ <div class="field"><label>種類</label><select id="type"><option ${w?.type==="phrase"?"selected":""} value="phrase">フレーズ</option><option ${w?.type!=="phrase"?"selected":""} value="word">単語</option></select></div>
+ <div class="field"><label>カテゴリ</label><input id="category" value="${esc(w?.category||"")}" placeholder="例：動詞、日常会話"></div>
+ <div class="field"><label>メモ</label><textarea id="memo">${esc(w?.memo||"")}</textarea></div>
+ <div class="row between"><label>⭐ お気に入り <input id="fav" type="checkbox" ${w?.favorite?"checked":""}></label><label>出題ON <input id="active" type="checkbox" ${w?.active!==false?"checked":""}></label></div>
+ <div style="height:14px"></div><button class="primary" onclick="saveWord('${w?.id||""}')">保存</button></div>`);
+}
+function saveWord(id){
+ let jp=document.getElementById("jp").value.trim(),ko=document.getElementById("ko").value.trim();if(!jp||!ko){toast("日本語と韓国語を入力してください");return}
+ let w=id?data.words.find(x=>x.id===id):{id:uid(),attempts:0,correct:0,streak:0,results:[],added:today()};
+ Object.assign(w,{jp,ko,type:document.getElementById("type").value,category:document.getElementById("category").value.trim(),memo:document.getElementById("memo").value,favorite:document.getElementById("fav").checked,active:document.getElementById("active").checked});
+ if(!id)data.words.unshift(w);save();toast("保存しました");setTimeout(()=>go("words"),250)
+}
+function editWord(id){let w=data.words.find(x=>x.id===id);addWord(w)}
+
+function renderHistory(){
+ let rows=data.history.map(h=>{let p=h.questions?Math.round(h.correct/h.questions*100):0;return `<div class="item"><div class="row between"><div><b>${h.date}</b><div class="small muted">${h.questions}問　${h.correct}正解　${h.questions-h.correct}不正解</div></div><b>${p}%</b></div></div>`}).join("");
+ shell(`<div class="card"><h2>📈 学習履歴</h2>${rows?`<div class="list">${rows}</div>`:`<div class="empty">まだ学習履歴がありません</div>`}</div>`);
+}
+
+function renderSettings(){
+ shell(`<div class="card"><h2>⚙️ 設定</h2>
+ <div class="item"><div class="row between"><div><b>今日の目標</b><div class="small muted">ホームに表示する目標問題数</div></div><input id="goal" type="number" min="1" value="${data.goal}" style="width:90px"></div></div>
+ <div class="item"><label>🔊 韓国語音声 <input id="sound" type="checkbox" ${data.sound?"checked":""}></label></div>
+ <div class="item"><label>🐢 ゆっくり再生 <input id="slow" type="checkbox" ${data.slow?"checked":""}></label></div>
+ <div class="item"><label>⭕❌ 効果音・振動 <input id="effects" type="checkbox" ${data.effects?"checked":""}></label></div>
+ <div class="item"><button class="secondary" onclick="backup()">💾 データをバックアップ</button> <label class="secondary" style="display:inline-block">📥 データを復元<input id="restore" type="file" accept=".json" hidden onchange="restoreFile(event)"></label></div>
+ <div class="item"><div><b>📚 単語リストをインポート</b><div class="small muted">JSON形式の単語ファイル（jp/koを含む配列）を読み込んで、今の単語一覧に追加します。同じ日本語・韓国語の組み合わせは自動でスキップされます。複数ファイルをまとめて選択できます。</div></div><label class="secondary" style="display:inline-block;margin-top:10px">📥 ファイルを選択してインポート<input id="importWords" type="file" accept=".json" multiple hidden onchange="importWordsFile(event)"></label></div>
+ <div class="item"><button class="secondary" onclick="testVoice()">🔊 音声テスト</button></div>
+ </div>`);
+ document.getElementById("goal").onchange=e=>{data.goal=Math.max(1,+e.target.value||30);save();renderSettings()}
+ document.getElementById("sound").onchange=e=>{data.sound=e.target.checked;save()}
+ document.getElementById("slow").onchange=e=>{data.slow=e.target.checked;save()}
+ document.getElementById("effects").onchange=e=>{data.effects=e.target.checked;save()}
+}
+function testVoice(){speak("안녕하세요")}
+function backup(){let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`korean-trainer-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)}
+function restoreFile(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.words||!x.history)throw 0;data=x;save();toast("復元しました");go("home")}catch{toast("復元できないファイルです")}};r.readAsText(f)}
+
+function importWordsFile(e){
+ let files=Array.from(e.target.files||[]); if(!files.length)return;
+ let done=0, addedTotal=0, dupTotal=0, badFiles=0;
+ files.forEach(f=>{
+  let r=new FileReader();
+  r.onload=()=>{
+   try{
+    let arr=JSON.parse(r.result);
+    if(!Array.isArray(arr))throw 0;
+    let added=0, dup=0;
+    arr.forEach(item=>{
+     if(!item||!item.jp||!item.ko)return;
+     let exists=data.words.some(w=>w.jp===item.jp && w.ko===item.ko);
+     if(exists){dup++;return}
+     data.words.unshift({id:uid(),jp:item.jp,ko:item.ko,type:item.type==="phrase"?"phrase":"word",category:(item.category||"").trim(),memo:item.memo||"",favorite:false,active:true,attempts:0,correct:0,streak:0,results:[],added:today()});
+     added++;
+    });
+    addedTotal+=added; dupTotal+=dup;
+   }catch{ badFiles++; }
+   done++;
+   if(done===files.length){
+    save();
+    let msg=`${addedTotal}件の単語を追加しました`;
+    if(dupTotal)msg+=`（重複${dupTotal}件はスキップ）`;
+    if(badFiles)msg+=`／${badFiles}件のファイルは読み込めませんでした`;
+    toast(msg);
+    renderSettings();
+   }
+  };
+  r.readAsText(f);
+ });
+ e.target.value="";
+}
+
+renderHome();
+</script>
+</body>
+</html>
