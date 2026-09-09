@@ -5,25 +5,58 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e0304a">
 <title>韓国語トレーニング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#fff3f3;--card:#fff;--text:#2a1616;--muted:#8a6b6b;--line:#ffd9d9;--accent:#e0304a;--accent2:#ff5a72;--good:#16834b;--bad:#c22641;--shadow:0 10px 30px rgba(224,48,74,.12)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.app{max-width:720px;margin:auto;min-height:100vh;padding:18px 16px 100px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.brand{font-weight:800;font-size:21px;color:var(--accent)}.streak{font-size:13px;color:var(--muted);background:#ffe4e4;padding:5px 12px;border-radius:99px;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;box-shadow:var(--shadow);margin-bottom:14px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:"M PLUS Rounded 1c",-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;transition:transform .15s cubic-bezier(.34,1.56,.64,1)}button:active{transform:scale(.94)}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:18px 16px 100px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{font-weight:800;font-size:21px;color:var(--accent);display:flex;align-items:center;gap:4px}
+.brand .sparkle{display:inline-block;animation:sparkleFloat 2.2s ease-in-out infinite}
+.streak{font-size:13px;color:var(--muted);background:#ffe4e4;padding:5px 12px;border-radius:99px;font-weight:700;animation:pulse 2.6s ease-in-out infinite}
+.card{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;box-shadow:var(--shadow);margin-bottom:14px;animation:cardIn .45s cubic-bezier(.34,1.56,.64,1) both}
 h1,h2,h3{margin:0 0 12px}.muted{color:var(--muted)}.big{font-size:36px;font-weight:800;letter-spacing:.02em;color:var(--accent)}.center{text-align:center}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:999px;padding:15px 16px;font-weight:700;width:100%;box-shadow:0 8px 20px rgba(224,48,74,.35)}.secondary{background:#ffe9e9;color:var(--accent);border-radius:999px;padding:11px 16px;font-weight:650}.danger{color:var(--bad)}
-.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:13px 16px;border:1px solid var(--line);border-radius:18px;background:#fff}.field textarea{min-height:80px;resize:vertical;border-radius:18px}
+.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:999px;padding:15px 16px;font-weight:700;width:100%;box-shadow:0 8px 20px rgba(224,48,74,.35)}
+.primary:active{transform:scale(.95);box-shadow:0 4px 12px rgba(224,48,74,.35)}
+.secondary{background:#ffe9e9;color:var(--accent);border-radius:999px;padding:11px 16px;font-weight:650}
+.danger{color:var(--bad)}
+.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:13px 16px;border:1px solid var(--line);border-radius:18px;background:#fff;transition:box-shadow .2s,border-color .2s}.field textarea{min-height:80px;resize:vertical;border-radius:18px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--accent2);box-shadow:0 0 0 4px rgba(255,90,114,.15)}
 .row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.grow{flex:1}
-.nav{position:fixed;bottom:12px;left:12px;right:12px;background:rgba(255,255,255,.97);border:1px solid var(--line);padding:8px max(8px,calc((100vw - 720px)/2 + 8px));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;z-index:5;border-radius:26px;box-shadow:var(--shadow)}.nav button{background:transparent;color:var(--muted);padding:8px 4px;font-size:12px;border-radius:18px}.nav button.active{color:#fff;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2))}
-.stat{padding:16px;border-radius:20px;background:#fff2f2}.stat b{display:block;font-size:22px;margin-top:3px;color:var(--accent)}
-.progress{height:10px;background:#ffe1e1;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.list{display:flex;flex-direction:column}.item{padding:14px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.tag{font-size:11px;padding:4px 10px;border-radius:99px;background:#ffe9e9;color:var(--accent)}.on{background:#e8f7ef;color:var(--good)}.off{background:#f3eeee;color:var(--muted)}
-.answer{font-size:26px;font-weight:800;text-align:center;margin:20px 0}.result-good{color:var(--good)}.result-bad{color:var(--bad)}
+.nav{position:fixed;bottom:12px;left:12px;right:12px;background:rgba(255,255,255,.97);border:1px solid var(--line);padding:8px max(8px,calc((100vw - 720px)/2 + 8px));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;z-index:5;border-radius:26px;box-shadow:var(--shadow)}
+.nav button{background:transparent;color:var(--muted);padding:8px 4px;font-size:12px;border-radius:18px;transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .2s,color .2s}
+.nav button.active{color:#fff;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));animation:navPop .35s cubic-bezier(.34,1.56,.64,1)}
+.stat{padding:16px;border-radius:20px;background:#fff2f2;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
+.grid .stat:nth-child(1){animation-delay:.02s}.grid .stat:nth-child(2){animation-delay:.07s}.grid .stat:nth-child(3){animation-delay:.12s}.grid .stat:nth-child(4){animation-delay:.17s}
+.stat b{display:block;font-size:22px;margin-top:3px;color:var(--accent)}
+.progress{height:10px;background:#ffe1e1;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .7s cubic-bezier(.34,1.56,.64,1)}
+.list{display:flex;flex-direction:column}.item{padding:14px 0;border-bottom:1px solid var(--line);transition:transform .15s}.item:active{transform:scale(.99)}.item:last-child{border-bottom:0}
+.tag{font-size:11px;padding:4px 10px;border-radius:99px;background:#ffe9e9;color:var(--accent);transition:background .2s,color .2s}.on{background:#e8f7ef;color:var(--good)}.off{background:#f3eeee;color:var(--muted)}
+.answer{font-size:26px;font-weight:800;text-align:center;margin:20px 0}
+.result-good{color:var(--good);display:inline-block;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+.result-bad{color:var(--bad);display:inline-block;animation:shake .5s}
 .choice{display:flex;gap:8px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:18px;margin:7px 0}.choice input{width:auto}
 .small{font-size:12px}.empty{text-align:center;padding:30px;color:var(--muted)}
 .hidden{display:none!important}
-.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 18px;border-radius:99px;z-index:20;font-size:13px;box-shadow:0 8px 20px rgba(224,48,74,.35)}
+.toast{position:fixed;top:16px;left:50%;transform:translate(-50%,0);background:var(--accent);color:#fff;padding:10px 18px;border-radius:99px;z-index:20;font-size:13px;box-shadow:0 8px 20px rgba(224,48,74,.35);animation:toastIn .35s cubic-bezier(.34,1.56,.64,1)}
+.enter-right{animation:enterRight .35s cubic-bezier(.34,1.56,.64,1) both}
+.enter-left{animation:enterLeft .35s cubic-bezier(.34,1.56,.64,1) both}
+.enter-up{animation:enterUp .38s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-9px)}40%,60%{transform:translateX(9px)}}
+@keyframes sparkleFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-4px) rotate(14deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes navPop{0%{transform:scale(.82)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-16px) scale(.9)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes enterRight{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:translateX(0)}}
+@keyframes enterLeft{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:translateX(0)}}
+@keyframes enterUp{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(min-width:650px){.app{padding-top:28px}.nav{position:static;margin:30px auto 0;max-width:720px;border:1px solid var(--line);border-radius:26px}}
 </style>
 </head>
@@ -53,9 +86,14 @@ function nav(){return `<nav class="nav">
 <button class="${(page==="words"||page==="wordForm")?"active":""}" onclick="go('words')">📚<br>単語</button>
 <button class="${page==="history"?"active":""}" onclick="go('history')">📈<br>履歴</button>
 <button class="${page==="settings"?"active":""}" onclick="go('settings')">⚙️<br>設定</button></nav>`}
+const tabOrder=["home","words","history","settings"];
+let lastMainIndex=0;
 function shell(content){
+ let idx=tabOrder.indexOf(page), enterClass;
+ if(idx>=0){enterClass=idx>=lastMainIndex?"enter-right":"enter-left";lastMainIndex=idx}
+ else{enterClass="enter-up"}
  let backBtn=page!=="home"?`<div style="margin-bottom:12px"><button class="secondary" onclick="goBack()">← 戻る</button></div>`:"";
- document.getElementById("app").innerHTML=`<main class="app"><div class="top"><div class="brand">🇰🇷 韓国語トレーニング</div><div class="streak">🔥 ${data.streak}日</div></div>${backBtn}${content}</main>${nav()}`
+ document.getElementById("app").innerHTML=`<main class="app ${enterClass}"><div class="top"><div class="brand">🇰🇷 韓国語トレーニング<span class="sparkle">✨</span></div><div class="streak">🔥 ${data.streak}日</div></div>${backBtn}${content}</main>${nav()}`
 }
 function goBack(){
  if(page==="wordForm"){go("words");return}
@@ -68,10 +106,12 @@ function go(p){page=p; if(p==="home")renderHome();if(p==="words")renderWords();i
 function renderHome(){
  let h=data.history.find(x=>x.date===today())||{questions:0,correct:0};
  let pct=h.questions?Math.round(h.correct/h.questions*100):0;
- shell(`<div class="card center"><div class="muted">今日の学習</div><div class="big">${h.questions} / ${data.goal}問</div><div class="progress"><div style="width:${Math.min(100,h.questions/data.goal*100)}%"></div></div><div class="small muted" style="margin-top:8px">今日の正解率 ${pct}%</div></div>
+ let fillPct=Math.min(100,h.questions/data.goal*100);
+ shell(`<div class="card center"><div class="muted">今日の学習</div><div class="big">${h.questions} / ${data.goal}問</div><div class="progress"><div id="homeBar" style="width:0%"></div></div><div class="small muted" style="margin-top:8px">今日の正解率 ${pct}%</div></div>
  <div class="grid"><div class="stat">登録単語・フレーズ<b>${data.words.length}</b></div><div class="stat">出題ON<b>${activeWords().length}</b></div><div class="stat">習得済み<b>${data.words.filter(mastered).length}</b></div><div class="stat">連続学習<b>${data.streak}日</b></div></div>
  <div class="card"><button class="primary" onclick="setupStudy()">▶ 学習する</button></div>
  <div class="grid"><button class="secondary" onclick="go('words')">📚 単語一覧</button><button class="secondary" onclick="addWord()">➕ 単語を追加</button></div>`);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{let b=document.getElementById("homeBar");if(b)b.style.width=fillPct+"%"}));
 }
 
 function setupStudy(){
