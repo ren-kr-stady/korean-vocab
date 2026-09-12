@@ -37,8 +37,29 @@ h1,h2,h3{margin:0 0 12px}.muted{color:var(--muted)}.big{font-size:36px;font-weig
 .list{display:flex;flex-direction:column}.item{padding:14px 0;border-bottom:1px solid var(--line);transition:transform .15s}.item:active{transform:scale(.99)}.item:last-child{border-bottom:0}
 .tag{font-size:11px;padding:4px 10px;border-radius:99px;background:#ffe9e9;color:var(--accent);transition:background .2s,color .2s}.on{background:#e8f7ef;color:var(--good)}.off{background:#f3eeee;color:var(--muted)}
 .answer{font-size:26px;font-weight:800;text-align:center;margin:20px 0}
-.result-good{color:var(--good);display:inline-block;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
-.result-bad{color:var(--bad);display:inline-block;animation:shake .5s}
+.result-good{color:var(--good)}
+.result-bad{color:var(--bad)}
+.resultCard{padding-top:28px}
+.resultBadge{font-size:64px;line-height:1;margin-bottom:2px}
+.badge-good{animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+.badge-bad{animation:shake .5s}
+.resultLabel{font-size:22px;font-weight:800;margin-bottom:2px}
+.result-card-good{background:linear-gradient(180deg,#e9fbf0,#fff 65%)}
+.result-card-bad{background:linear-gradient(180deg,#fff0ef,#fff 65%)}
+.big-answer{font-size:36px;font-weight:800;color:var(--accent);margin:4px 0 10px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
+.diffBox{margin-top:16px;text-align:left;background:#fff7f7;border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.diffRow{margin:8px 0}
+.diffRow:first-child{margin-top:0}.diffRow:last-child{margin-bottom:0}
+.diffLabel{font-size:11px;color:var(--muted);display:block;margin-bottom:3px;font-weight:700}
+.diffText{font-size:21px;font-weight:700;letter-spacing:.01em;word-break:break-all;line-height:1.5}
+.diff-same{color:var(--text)}
+.diff-del{color:#fff;background:var(--bad);border-radius:5px;padding:1px 2px;text-decoration:line-through}
+.diff-add{color:#fff;background:var(--good);border-radius:5px;padding:1px 2px}
+.chart{display:flex;align-items:flex-end;gap:6px;height:150px;padding:22px 2px 0;overflow-x:auto}
+.chartBar{flex:1 0 auto;min-width:26px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+.chartBarVal{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.chartBarFill{width:100%;border-radius:8px 8px 4px 4px;transition:height .7s cubic-bezier(.34,1.56,.64,1);min-height:4px}
+.chartLabel{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap}
 .choice{display:flex;gap:8px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:18px;margin:7px 0}.choice input{width:auto}
 .small{font-size:12px}.empty{text-align:center;padding:30px;color:var(--muted)}
 .hidden{display:none!important}
@@ -92,12 +113,11 @@ function shell(content){
  let idx=tabOrder.indexOf(page), enterClass;
  if(idx>=0){enterClass=idx>=lastMainIndex?"enter-right":"enter-left";lastMainIndex=idx}
  else{enterClass="enter-up"}
- let backBtn=page!=="home"?`<div style="margin-bottom:12px"><button class="secondary" onclick="goBack()">← 戻る</button></div>`:"";
+ let backBtn=idx<0?`<div style="margin-bottom:12px"><button class="secondary" onclick="goBack()">← 戻る</button></div>`:"";
  document.getElementById("app").innerHTML=`<main class="app ${enterClass}"><div class="top"><div class="brand">🇰🇷 韓国語トレーニング<span class="sparkle">✨</span></div><div class="streak">🔥 ${data.streak}日</div></div>${backBtn}${content}</main>${nav()}`
 }
 function goBack(){
  if(page==="wordForm"){go("words");return}
- if(page==="study"||page==="result"){if(confirm("学習を中断してホームに戻りますか？"))go("home");return}
  go("home");
 }
 
@@ -107,9 +127,10 @@ function renderHome(){
  let h=data.history.find(x=>x.date===today())||{questions:0,correct:0};
  let pct=h.questions?Math.round(h.correct/h.questions*100):0;
  let fillPct=Math.min(100,h.questions/data.goal*100);
+ let inProgress=session && session.answered<session.count;
  shell(`<div class="card center"><div class="muted">今日の学習</div><div class="big">${h.questions} / ${data.goal}問</div><div class="progress"><div id="homeBar" style="width:0%"></div></div><div class="small muted" style="margin-top:8px">今日の正解率 ${pct}%</div></div>
  <div class="grid"><div class="stat">登録単語・フレーズ<b>${data.words.length}</b></div><div class="stat">出題ON<b>${activeWords().length}</b></div><div class="stat">習得済み<b>${data.words.filter(mastered).length}</b></div><div class="stat">連続学習<b>${data.streak}日</b></div></div>
- <div class="card"><button class="primary" onclick="setupStudy()">▶ 学習する</button></div>
+ ${inProgress?`<div class="card center" style="background:#fff7e8;border-color:#ffe2ad"><div class="small muted">学習の続きがあります（${session.answered}/${session.count}問）</div><div style="height:8px"></div><button class="primary" onclick="resumeStudy()">▶ 学習を再開する</button></div>`:`<div class="card"><button class="primary" onclick="setupStudy()">▶ 学習する</button></div>`}
  <div class="grid"><button class="secondary" onclick="go('words')">📚 単語一覧</button><button class="secondary" onclick="addWord()">➕ 単語を追加</button></div>`);
  requestAnimationFrame(()=>requestAnimationFrame(()=>{let b=document.getElementById("homeBar");if(b)b.style.width=fillPct+"%"}));
 }
@@ -153,9 +174,17 @@ function nextQuestion(){
  if(session.answered>=session.count){finishStudy();return}
  let w=session.queue.shift()||pick();
  session.current=w; session.answerLocked=false;
+ renderStudyScreen();
+}
+function resumeStudy(){
+ if(!session||!session.current)return;
+ renderStudyScreen();
+}
+function renderStudyScreen(){
+ let w=session.current;
  page="study";
  shell(`<div class="card center"><div class="muted">${session.answered+1} / ${session.count}</div><div class="answer">${esc(w.jp)}</div><div class="field"><input id="ans" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="韓国語で入力"></div><button class="primary" onclick="submitAnswer()">回答</button><div class="small muted" style="margin-top:12px">Enterでも回答できます</div></div>`);
- setTimeout(()=>document.getElementById("ans")?.focus(),50);
+ document.getElementById("ans")?.focus();
 }
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&page==="study")submitAnswer()})
 
@@ -168,12 +197,40 @@ function submitAnswer(){
  else{w.streak=0;w.lastWrongAt=Date.now();session.wrong++;session.queue.push(w);effect(false)}
  session.answered++;save();showResult(ok,input,w);
 }
+function diffChars(a,b){
+ let n=a.length,m=b.length;
+ let dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+ for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+ let i=0,j=0,resA=[],resB=[];
+ while(i<n&&j<m){
+  if(a[i]===b[j]){resA.push([a[i],"same"]);resB.push([b[j],"same"]);i++;j++}
+  else if(dp[i+1][j]>=dp[i][j+1]){resA.push([a[i],"del"]);i++}
+  else{resB.push([b[j],"add"]);j++}
+ }
+ while(i<n){resA.push([a[i],"del"]);i++}
+ while(j<m){resB.push([b[j],"add"]);j++}
+ return {resA,resB};
+}
 function showResult(ok,input,w){
- page="result";shell(`<div class="card center"><h2 class="${ok?"result-good":"result-bad"}">${ok?"⭕ 正解！":"❌ 不正解"}</h2>
- ${!ok?`<div class="muted">あなたの回答</div><div class="answer">${esc(input||"（未入力）")}</div>`:""}
- <div class="muted">正解</div><div class="answer">${esc(w.ko)}</div><div class="row" style="justify-content:center"><button class="secondary" onclick="speak('${esc(w.ko).replace(/'/g,"&#39;")}')">🔊 音声</button></div>
- <div class="small muted" style="margin:15px 0">連続正解 ${w.streak||0}回　/　最近10回 ${recentRate(w)}%</div>
- <button class="primary" onclick="nextQuestion()">次へ</button></div>`);
+ page="result";
+ let diffHtml="";
+ if(!ok){
+  let {resA,resB}=diffChars(input||"",w.ko);
+  let renderRow=arr=>arr.map(([c,t])=>`<span class="diff-${t}">${esc(c)}</span>`).join("")||`<span class="muted">（未入力）</span>`;
+  diffHtml=`<div class="diffBox">
+   <div class="diffRow"><span class="diffLabel">あなたの回答</span><div class="diffText">${renderRow(resA)}</div></div>
+   <div class="diffRow"><span class="diffLabel">正解との違い</span><div class="diffText">${renderRow(resB)}</div></div>
+  </div>`;
+ }
+ shell(`<div class="card center resultCard ${ok?"result-card-good":"result-card-bad"}">
+  <div class="resultBadge ${ok?"badge-good":"badge-bad"}">${ok?"⭕":"❌"}</div>
+  <div class="resultLabel ${ok?"result-good":"result-bad"}">${ok?"正解！":"不正解…"}</div>
+  <div class="muted" style="margin-top:10px">正解</div>
+  <div class="big-answer">${esc(w.ko)}</div>
+  <div class="row" style="justify-content:center"><button class="secondary" onclick="speak('${esc(w.ko).replace(/'/g,"&#39;")}')">🔊 音声</button></div>
+  ${diffHtml}
+  <div class="small muted" style="margin:15px 0">連続正解 ${w.streak||0}回　/　最近10回 ${recentRate(w)}%</div>
+  <button class="primary" onclick="nextQuestion()">次へ</button></div>`);
  setTimeout(()=>speak(w.ko),300);
 }
 
@@ -185,7 +242,7 @@ function finishStudy(){
  save();renderResultSummary();
 }
 function renderResultSummary(){
- page="home";shell(`<div class="card center"><h2>🎉 学習終了！</h2><div class="grid"><div class="stat">問題<b>${session.answered}</b></div><div class="stat">正解<b>${session.correct}</b></div><div class="stat">不正解<b>${session.wrong}</b></div><div class="stat">正解率<b>${Math.round(session.correct/session.answered*100)}%</b></div></div><div style="height:14px"></div><button class="primary" onclick="go('home')">ホームへ</button></div>`)}
+ page="home";shell(`<div class="card center"><h2>🎉 学習終了！</h2><div class="grid"><div class="stat">問題<b>${session.answered}</b></div><div class="stat">正解<b>${session.correct}</b></div><div class="stat">不正解<b>${session.wrong}</b></div><div class="stat">正解率<b>${Math.round(session.correct/session.answered*100)}%</b></div></div><div style="height:14px"></div><button class="primary" onclick="session=null;go('home')">ホームへ</button></div>`)}
 
 function renderWords(){
  shell(`<div class="card"><div class="row between"><h2>📚 単語一覧</h2><button class="secondary" onclick="addWord()">＋追加</button></div><div class="field"><input id="search" placeholder="🔍 日本語・韓国語・カテゴリで検索" oninput="drawWords()"></div><div class="row wrap"><select id="sort" onchange="drawWords()" class="secondary"><option value="new">登録順</option><option value="rate">正解率が低い順</option><option value="recent">最近学習</option><option value="jp">日本語順</option></select></div></div><div id="wordList" class="card"></div>`);
@@ -218,8 +275,16 @@ function saveWord(id){
 function editWord(id){let w=data.words.find(x=>x.id===id);addWord(w)}
 
 function renderHistory(){
+ let days=[...data.history].sort((a,b)=>a.date.localeCompare(b.date)).slice(-14);
+ let bars=days.map(h=>{
+  let pct=h.questions?Math.round(h.correct/h.questions*100):0;
+  let color=pct>=80?"var(--good)":pct>=50?"var(--accent2)":"var(--bad)";
+  return `<div class="chartBar" title="${esc(h.date)} 正解率${pct}%"><div class="chartBarVal">${pct}%</div><div class="chartBarFill" data-h="${pct}" style="height:0%;background:${color}"></div><div class="chartLabel">${esc(h.date.slice(5))}</div></div>`;
+ }).join("");
  let rows=data.history.map(h=>{let p=h.questions?Math.round(h.correct/h.questions*100):0;return `<div class="item"><div class="row between"><div><b>${h.date}</b><div class="small muted">${h.questions}問　${h.correct}正解　${h.questions-h.correct}不正解</div></div><b>${p}%</b></div></div>`}).join("");
- shell(`<div class="card"><h2>📈 学習履歴</h2>${rows?`<div class="list">${rows}</div>`:`<div class="empty">まだ学習履歴がありません</div>`}</div>`);
+ shell(`<div class="card"><h2>📊 学習グラフ</h2><div class="small muted" style="margin-bottom:4px">直近${days.length||0}日間の正解率</div>${days.length?`<div class="chart">${bars}</div>`:`<div class="empty">まだ学習履歴がありません</div>`}</div>
+ <div class="card"><h2>📅 学習履歴</h2>${rows?`<div class="list">${rows}</div>`:`<div class="empty">まだ学習履歴がありません</div>`}</div>`);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{document.querySelectorAll(".chartBarFill").forEach(el=>{el.style.height=el.dataset.h+"%"})}));
 }
 
 function renderSettings(){
